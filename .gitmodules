@@ -1,0 +1,3 @@
+[submodule "src/Part1_Ch1_PerformingCalculationsOnAGPU"]
+	path = src/Part1_Ch1_PerformingCalculationsOnAGPU
+	url = https://github.com/bigzz/PerformingCalculationsOnAGPU.git
