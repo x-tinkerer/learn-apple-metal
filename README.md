@@ -314,3 +314,108 @@ MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, 1, 1);
 
 
 
+
+
+
+### [Chapter 2. Using Metal to Draw a View’s Contents](https://developer.apple.com/documentation/metal/basic_tasks_and_concepts/using_metal_to_draw_a_view_s_contents)
+
+创建一个 MetalKit 视图和一个`渲染通道(render pass)`来绘制视图的内容。
+
+#### Overview
+在此示例中，您将学习使用 Metal 渲染图形内容的基础知识。您将使用 `MetalKit framework` 创建一个使用 Metal 绘制可视内容的`视图(view)`，然后，您将为`渲染通道(render pass)`编码命令将视图清除为背景颜色。
+
+    Note
+
+    MetalKit automates windowing system tasks, loads textures, and handles 3D model data. See MetalKit for more information.
+
+#### Prepare a MetalKit View to Draw
+
+MetalKit 提供了一个名为 [MTKView](https://developer.apple.com/documentation/metalkit/mtkview) 的类，它是 [NSView](https://developer.apple.com/documentation/appkit/nsview)（在 macOS 中）或 [UIView](https://developer.apple.com/documentation/uikit/uiview)（在 iOS 和 tvOS 中）的子类，`MTKView` 会处理许多在使用 Metal 绘制内容到屏幕上的相关细节。
+
+`MTKView` 需要对 `Metal 设备对象` 的引用才能在其内部创建资源，因此第一步是将视图的 `device` 属性设置为现有的 `MTLDevice`.
+
+```Swift
+_view.device = MTLCreateSystemDefaultDevice();
+```
+
+其他MTKView属性允许您控制其行为，要将视图的内容擦除为纯色背景，请设置其 [clearColor](https://developer.apple.com/documentation/metalkit/mtkview/1536036-clearcolor) 属性。您可以使用 [MTLClearColorMake(_:_:_:_:)](https://developer.apple.com/documentation/metal/1437971-mtlclearcolormake) 函数创建颜色，指定 R、G、B 和 alpha 值。
+
+```Swift
+_view.clearColor = MTLClearColorMake(0.0, 0.5, 1.0, 1.0);
+```
+
+因为您不会在此示例中绘制动画内容，所以配置视图使其仅在需要更新内容时绘制，例如当视图改变形状时：
+
+```Swift
+_view.enableSetNeedsDisplay = YES;
+```
+
+#### Delegate Drawing Responsibilities
+
+MTKView 依靠您的应用程序向 Metal 发出命令以生成视觉内容，MTKView使用委托模式通知您的应用程序何时应该绘制，要接收委托回调，需要将视图的 `delegate` 属性设置为符合 [MTKViewDelegate](https://developer.apple.com/documentation/metalkit/mtkviewdelegate) 协议的对象。
+
+```Swift
+_view.delegate = _renderer;
+```
+
+委托实现了两种方法：
+- 只要内容的大小发生变化，视图就会调用 [mtkView(_:drawableSizeWillChange:)](https://developer.apple.com/documentation/metalkit/mtkviewdelegate/1536015-mtkview) 方法。当包含视图的窗口调整大小或设备方向更改（在 iOS 上）时，会发生这种情况。这允许您的应用程序调整其呈现的分辨率以适应视图的大小。
+
+- 每当需要更新视图的内容时，视图就会调用 [draw(in:)](https://developer.apple.com/documentation/metalkit/mtkviewdelegate/1535942-draw) 方法。在这种方法中，您需要创建一个`命令缓冲区(command buffer)`，对 GPU 绘制什么以及何时在屏幕上显示的`命令(commands)`进行编码，并将该命令缓冲区排入队列让 GPU 执行。这有时被称为帧绘制，可以将帧视为生成单个图像并显示在屏幕上的所有工作，在游戏这样的交互式应用程序中，每秒可能会绘制许多帧。
+
+在这个示例中，一个名为 `AAPLRenderer` 的类实现了委托方法并承担了绘图的工作，`视图控制器(view controller)`创建此类的一个实例并将其设置为视图的委托。
+
+
+#### Create a Render Pass Descriptor
+
+当绘制时，GPU 将结果存储到`纹理(textures)`中，纹理是包含图像数据且可供 GPU 访问的`内存块`。在此示例中，MTKView 创建了您需要绘制到视图中的所有纹理。它创建多个纹理，以便在渲染到另一个纹理时显示一个纹理的内容。
+
+要进行绘制，您需要创建一个 `渲染通道(render pass)` ，它是用来绘制一个纹理集合的渲染命令序列。在`渲染通道(render pass)` 中，`纹理(textures)`也称为`渲染目标(render targets)`。要创建`渲染通道(render pass)` ，您需要一个`渲染通道描述符(render pass descriptor)`，MTLRenderPassDescriptor的一个实例。 在本示例中，不是配置您自己的渲染通道描述符，而是使用 MetalKit 视图创建一个。
+
+```Swift
+MTLRenderPassDescriptor *renderPassDescriptor = view.currentRenderPassDescriptor;
+if (renderPassDescriptor == nil)
+{
+    return;
+}
+```
+
+`渲染通道描述符(render pass descriptor)`描述了一组`渲染目标(render targets),`，以及在`渲染通道(render pass)`的开始和结束时应该如何处理它们，`渲染通道(render pass)`还定义了此示例未涉及的渲染的其他些方面。上述视图返回一个带有单个颜色`附件(attachment)`的渲染通道描述符，该附件指向视图的纹理之一，否则根据视图的属性配置渲染通道。默认情况下，这意味着在渲染过程开始时，渲染目标被擦除为与视图`clearColor`属性匹配的纯色，并且在渲染过程结束时，所有更改都将存储回纹理。
+
+因为视图的渲染通道描述符可能是nil，您应该在创建渲染通道之前进行测试以确保渲染通道描述符对象是非nil的。
+
+#### Create a Render Pass
+
+您可以使用 [MTLRenderCommandEncoder](https://developer.apple.com/documentation/metal/mtlrendercommandencoder) 对象将其编码到命令缓冲区来创建 `渲染通道(render pass)` 。调用命令缓冲区的 [makeRenderCommandEncoder(descriptor:)](https://developer.apple.com/documentation/metal/mtlcommandbuffer/1442999-makerendercommandencoder)方法并传入`渲染通道描述符(render pass descriptor)`。
+
+```Swift
+id<MTLRenderCommandEncoder> commandEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+```
+
+在此示例中，没有对任何绘图命令进行编码，因此渲染过程所做的唯一事情就是擦除纹理。调用编码器的`endEncoding`方法表示pass已经完成。
+
+```Swift
+[commandEncoder endEncoding];
+```
+
+#### Present a Drawable to the Screen
+绘制到纹理并不会自动在屏幕上显示新内容，实际上，屏幕上只能呈现某些纹理。在 Metal 中，可以在屏幕上显示的纹理由可`绘制对象(drawable objects)`管理，并且要显示内容，您需要呈现可绘制对象。
+
+MTKView自动创建可绘制对象来管理其纹理，读取`currentDrawable` 属性以获取拥有作为`渲染通道目标(render pass’s target)`的纹理的可绘制对象。视图返回一个`CAMetalDrawable`对象，一个连接到 `Core Animation` 的对象。
+
+```Swift
+id<MTLDrawable> drawable = view.currentDrawable;
+```
+调用命令缓冲区上的[present(_:)](https://developer.apple.com/documentation/metal/mtlcommandbuffer/1443029-present)方法，传入drawable对象。
+
+```Swift
+[commandBuffer presentDrawable:drawable];
+```
+这个方法告诉 Metal，当命令缓冲区被调度执行时，Metal 应该与 `Core Animation` 协调在渲染完成后显示纹理。当 `Core Animation` 呈现纹理时，它成为视图的新内容。在此示例中，这意味着已擦除的纹理将成为视图的新背景。该更改与 `Core Animation` 为屏幕用户界面元素所做的任何其他视觉更新一起发生。
+
+#### Commit the Command Buffer
+现在您已经为帧绘制准备好了所有命令，把它提交命令缓冲区。
+
+```Swift
+[commandBuffer commit];
+```
