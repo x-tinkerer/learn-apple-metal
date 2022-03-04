@@ -23,11 +23,13 @@
 
 - Many high level Apple frameworks are built on top of Metal to take advantage of its performance, including `Core Image`, `SpriteKit`, and `SceneKit`.
 
+</br>
+</br>
 
 ## [PART 1 : Basic Tasks and Concepts](https://developer.apple.com/documentation/metal/basic_tasks_and_concepts)
 
 ### [Chapter 1. Performing Calculations on a GPU](https://developer.apple.com/documentation/metal/basic_tasks_and_concepts/performing_calculations_on_a_gpu)
-
+----
 
 #### 0. Overview
 
@@ -313,12 +315,11 @@ MTLSize threadgroupSize = MTLSizeMake(threadGroupSize, 1, 1);
 ```
 
 
-
-
-
+</br>
+</br>
 
 ### [Chapter 2. Using Metal to Draw a View’s Contents](https://developer.apple.com/documentation/metal/basic_tasks_and_concepts/using_metal_to_draw_a_view_s_contents)
-
+----
 创建一个 MetalKit 视图和一个`渲染通道(render pass)`来绘制视图的内容。
 
 #### Overview
