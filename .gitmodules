@@ -1,3 +1,6 @@
 [submodule "src/Part1_Ch1_PerformingCalculationsOnAGPU"]
 	path = src/Part1_Ch1_PerformingCalculationsOnAGPU
 	url = https://github.com/bigzz/PerformingCalculationsOnAGPU.git
+[submodule "src/Part1_Ch2_UsingMetalToDrawAViewContentsents"]
+	path = src/Part1_Ch2_UsingMetalToDrawAViewContentsents
+	url = https://github.com/bigzz/UsingMetalToDrawAViewContentsents.git
