@@ -420,3 +420,19 @@ id<MTLDrawable> drawable = view.currentDrawable;
 ```Swift
 [commandBuffer commit];
 ```
+
+</br>
+</br>
+
+### [Chapter 3. Using a Render Pipeline to Render Primitives](https://developer.apple.com/documentation/metal/using_a_render_pipeline_to_render_primitives)
+
+渲染一个简单的2D三角形。
+
+#### Overview
+
+在上一节内容中学习了如何设置MTKView对象并使用渲染通道更改视图的内容，但上一示例只是将视图的内容擦除为背景颜色。本示例向您展示如何配置`渲染管道(render pipeline)`并将其用作`渲染通道(render pass)`的一部分，以在视图中绘制一个简单的 2D 彩色三角形。该示例为每个`顶点(vertex)`提供位置和颜色，`渲染管道(render pipeline)`使用该数据渲染三角形，在为三角形顶点指定的颜色之间插入颜色值。
+
+![triangle](./assets/imgs/c7a5392a-df08-4221-b588-692fb0e7ff91.png)
+
+Xcode 项目包含可以在 macOS、iOS 和 tvOS 上运行示例的代码。
+
