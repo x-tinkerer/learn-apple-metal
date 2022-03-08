@@ -436,3 +436,73 @@ id<MTLDrawable> drawable = view.currentDrawable;
 
 Xcode 项目包含可以在 macOS、iOS 和 tvOS 上运行示例的代码。
 
+
+
+
+
+</br>
+</br>
+
+## [PART X : Tools]()
+
+
+### [Chapter 1.Diagnosing Metal Programming Issues Early](https://developer.apple.com/documentation/metal/diagnosing_metal_programming_issues_early)
+
+
+</br>
+</br>
+
+### [Chapter 2.Developing Metal Apps that Run in Simulator](https://developer.apple.com/documentation/metal/developing_metal_apps_that_run_in_simulator)
+
+</br>
+</br>
+
+### [Chapter 3.Supporting Simulator in a Metal App](https://developer.apple.com/documentation/metal/supporting_simulator_in_a_metal_app)
+
+
+</br>
+</br>
+
+### [Chapter 4.Frame Capture Debugging Tools](https://developer.apple.com/documentation/metal/frame_capture_debugging_tools)
+
+</br>
+</br>
+
+### [Chapter 5.Using Metal System Trace in Instruments to Profile Your App](https://developer.apple.com/documentation/metal/using_metal_system_trace_in_instruments_to_profile_your_app)
+---
+通过检查应用程序的 CPU 和 GPU 利用率问题让帧率更平滑。
+
+#### Overview
+
+低帧速率可能会导致应用程序对其用户造成迟缓或干扰的感觉，因此消除突然中断或卡顿对优化应用程序的用户体验非常重要。要获取有关应用程序帧率缓慢的原因信息，请使用 Xcode 的 `Game Performance` 工具，它将线程和系统调用信息与 `Metal System Trace` 工具结合在一起，通过呈现应用程序的重要状态和渲染活动，`Game Performance` 可以帮助您推断实现一致、平滑渲染所需的调整。
+
+#### Open the Template
+
+在 Xcode 项目中，通过选择 Product > Profile 或按 Command+I (⌘I) 开始性能分析，在模板选择窗口中，选择 `Game Performance`。
+
+    pic
+
+
+#### Capture Results
+
+要收集分析应用程序帧率所需的数据，首先单击图 2中显示的记录按钮。
+
+    pic
+
+在您的应用程序中，执行重现慢帧率的操作，然后再次单击录制按钮以停止录制。您将在 Xcode 的中心窗格中找到捕获的结果。
+
+#### Identify Performance Anomalies
+
+为了加快您对捕获结果的审查，请将您的注意力集中在帧速率较慢的时间上。有时帧率异常是由不经常跳过的帧引起的，有时是由帧率一直很差引起的。无论哪种情况，您都可以通过发现应用程序显示时间的意外延迟来识别帧速率异常。
+
+例如，图 3中的标注 1突出显示了一个需要 250 毫秒 (ms) 才能完成的显示实例。标注 2 显示了在该时间段内跳过了多少垂直同步 (vsync) 事件。
+
+
+
+####
+
+</br>
+</br>
+
+### [Chapter 6.Optimizing Performance with the GPU Counters Instrument](https://developer.apple.com/documentation/metal/optimizing_performance_with_the_gpu_counters_instrument)
+----
