@@ -480,26 +480,132 @@ Xcode 项目包含可以在 macOS、iOS 和 tvOS 上运行示例的代码。
 
 在 Xcode 项目中，通过选择 Product > Profile 或按 Command+I (⌘I) 开始性能分析，在模板选择窗口中，选择 `Game Performance`。
 
-    pic
+![1](./assets/imgs/tools/1.png)
 
 
 #### Capture Results
 
-要收集分析应用程序帧率所需的数据，首先单击图 2中显示的记录按钮。
+首先单击图 2中显示的记录按钮，收集分析应用程序帧率问题所需的数据。
 
-    pic
+![2](./assets/imgs/tools/2.png)
 
-在您的应用程序中，执行重现慢帧率的操作，然后再次单击录制按钮以停止录制。您将在 Xcode 的中心窗格中找到捕获的结果。
+在您的应用程序中，执行重现掉帧的操作，然后再次单击录制按钮以停止录制，在 Xcode 的中心窗格中找到获取的数据。
 
 #### Identify Performance Anomalies
 
-为了加快您对捕获结果的审查，请将您的注意力集中在帧速率较慢的时间上。有时帧率异常是由不经常跳过的帧引起的，有时是由帧率一直很差引起的。无论哪种情况，您都可以通过发现应用程序显示时间的意外延迟来识别帧速率异常。
+为了加快您对抓取结果的检查，请将您的注意力集中在绘制时间较慢的帧上。有时帧率异常是由偶尔跳过的帧引起的，有时是由帧率一直很差引起的，无论哪种情况，您都可以通过发现应用程序显示时间的`异常延迟(unexpected delay)`来识别帧速率异常。
 
-例如，图 3中的标注 1突出显示了一个需要 250 毫秒 (ms) 才能完成的显示实例。标注 2 显示了在该时间段内跳过了多少垂直同步 (vsync) 事件。
+例如，图3中的突出标注1展示了一个需要 250 毫秒 (ms) 才能完成显示的实例。标注2展示了在该时间段内跳过了多少垂直同步 (vsync) 信号。
+
+![3](./assets/imgs/tools/3.png)
+
+因为250毫秒的显示实例比它之前的显示实例要长得多，所以传送该帧的延迟将被用户感觉为卡顿。
+相比之下，图4展示了一个保持一致帧速率的应用程序。在显示结果中，将鼠标悬停在一帧上以检查其持续时间。
+
+![4](./assets/imgs/tools/4.png)
+
+16.67ms的是60 fps的一帧显示周期，并且由于图4中的所有其他帧始维持这样的显示周期，因此并没有观察到性能异常。
+
+并非所有显示器都使用约16毫秒的帧间隔；例如，在 ProMotion 显示器上垂直同步每约4毫秒发生一次。因此，显示实例不需要与 vsync 对齐以获得良好的帧速率---使用20毫秒帧间隔的应用程序只要它始终达到 50 fps，同样被认为具有良好的帧速率。然而，图3的标注1中显示的延迟250毫秒对于流畅的动画来说太长了。
+
+#### Check Shader Core Utilization
+
+发现性能异常后，请查看问题发生时的 GPU 活动以查找引起问题的原因。`GPU hardware track` 显示了着`色器管道阶段(shader pipeline stages)`，这些阶段统称为 `着色器核心(shader core)`。跟踪时间线中任`何长时间运行的阶段(long-running stages)`或 `不一致的持续时间(inconsistent durations)` 都可能表明存在利用率问题。例如，图5展示了 `显示(display)` 跨越两个帧间隔的情况，这意味着应用程序无意中跳过了一帧。接着需要开始调查 `着色器核心(shader core)` `利用率（utilization）` 导致帧速率不佳的潜在原因：
+
+1. 观察性能异常；在当前情况下，`显示(display)`跨越了两个帧间隔。
+2. 顶点着色器是使用率是良好的； 因为它在帧间隔内的很小一段时间内就完成了。
+3. 将鼠标悬停在片段着色器上以查看其持续时间； 在当前情况下，它运行了36毫秒，这太长了。
+
+![5](./assets/imgs/tools/5.png)
+
+由于顶点和片段着色器的总持续时间超过了60fps的帧间隔(16.67 ms)周期，因此应用程序跳过了一帧。在这种情况下，顶点着色器运行得很快，这意味着应用程序的帧速率问题完全是由片段着色器过度使用引起的。
+
+以下是`着色器核心(shader core)`可能被过度使用的其他原因：
+
+- Too many render passes
+
+    Indicated by the renderer depriving the GPU of downtime. Check the number of render passes that occur at the time of the poor frame rate by using the dependency viewer. For more information, refer to Viewing Your Frame Graph.
+
+- High resolution
+
+    Inidicated by critically more fragment shader activity per the same number of submitted vertices, as compared to when your viewport is set to the smaller size. To ensure your app's viewport is not related to the slowdown, temporarily reduce viewport size to see if performance improves.
+
+- Large textures
 
 
+    Indicated by high synchronization time when profiling your fragment shader. The profiler shows a high percentage of time in "wait memory", as seen in Table 1 in Optimizing Performance with the Shader Profiler.
 
-####
+
+- Large meshes
+
+    Indicated by a high number of vertices submitted by your app. Check the affected frame(s) using the geometry viewer. For more information, see Viewing Your Meshes with the Geometry Viewer.
+
+- Unoptimized shader code
+
+    Indicated by general shader sluggishness. If you're able to modify your app's shaders, profile them to identify hot spots, like those covered in Table 1 in Optimizing Performance with the Shader Profiler. For example, you can optimize your shaders by downsizing data types, or minimizing the use of control structures. Note that you may not know ahead of time whether your shaders can benefit from optimization until you try it out.
+
+#### Check CPU Utilization
+
+在检查着色器核心利用率时，请注意是否有迹象表明您的应用程序的CPU利用率存在问题。图6展示的跳帧似乎是由着色器核心以外的其他原因引起的情况。
+
+1. 在 `GPU hardware tracks` 中，查看着色器管道阶`段片段着色器(fragment shader)`完成的时刻, 这是`管道(pipeline stages)`中的最后阶段。
+2. 观察到显示和着色器核心再次运行时之间大概有 ~1.5 帧的间隔间隙。
+3. 观察到显示和着色器核心再次运行时之间大概有 ~13 帧的间隔间隙。
+
+![6](./assets/imgs/tools/6.png)
+
+当显示跨越多个帧间隔并且着色器核心时间线中存在间隙（如图6中的标注2和3所示）时，这表明您的宿主应用程序的代码运行时间很长。接下来，需要检查应用程序的CPU利用率，以考虑它是否是导致帧速率不佳的原因。
+
+#### Check for Long-Running Host App Code
+要检查您的应用程序的 CPU 利用率，请在`线程状态跟踪(hread state tracks)`中识别您的`渲染线程(rendering thread)`。在 CPU 利用率正常的情况下，您的应用程序的渲染线程应该显示出大量的阻塞时间。图7显示了选定的应用程序渲染线程，并且突出展示了它在约16毫秒帧间隔内的阻塞时间。
+
+![7](./assets/imgs/tools/7.png)
+
+阻塞时间表示您的渲染器完成提交其`绘制调用(draw calls)`，并在帧间隔中留出一些时间。因为图7中显示的阻塞时间量约占其帧间隔的三分之二，所以宿主应用程序为着色器核心留出了足够的时间在相同的帧间隔内开始和完成其工作。
+
+相比之下，如果您的渲染线程没有显示太多阻塞时间，则您的应用程序可能过度使用 CPU。要确定您的应用程序的 CPU 是否被过度使用并获取有关原因的更多信息，请按照以下步骤操作，如图8所示：
+
+1. 观察显示持续时间超过 16.67 毫秒的卡顿。
+2. 确保`着色器代码(shader code)`不是低帧率的原因。有关详细信息，请参阅检查[Check Shader Core Utilization](https://developer.apple.com/documentation/metal/using_metal_system_trace_in_instruments_to_profile_your_app#3081079) 。
+3. 检查蓝色的“正在运行”的线程结果。
+4. 单击`thread's track`将其选中。
+5. 从视图选择菜单中选择`Profile`。
+6. 展开结果列表项并查找权重最高的方法，以找到在您的宿主应用程序代码中花费最多时间的方法。
+
+![8](./assets/imgs/tools/8.png)
+
+
+线程的运行时间由`track`中蓝色和橙色区域的集合表示（参见图8中的标注3）。如果帧间隔的阻塞时间很少，则表明 CPU 过度使用。要解决此问题，请将优化工作集中在改进运行缓慢的代码上，例如调整标注6标记的​​方法。因为`长时间运行(long-running methods)`的方法在您的应用程序中，您应该了解是否有机会以及如何优化它们以更快地运行。
+
+#### Check CPU-GPU Pipelining
+除了着色器核心和 CPU 利用率之外，低帧率的更微妙原因还涉及 CPU-GPU 流水线。在这种情况下，流水线是指您的应用程序如何协调 CPU 和 GPU 的工作，同时保持一致的帧速率。以下部分介绍了不良 CPU-GPU 流水线可能导致的问题。
+
+
+##### Check CPU-GPU Overlap
+CPU-GPU 重叠的意思是指通过最小化 CPU 和 GPU 相互等待的时间，最大化每个芯片并行执行的工作量。例如，Metal 提供了间接命令缓冲区（ICB）来增加重叠；通过使用 ICB 在 GPU 上生成渲染命令，您可以避免 CPU 等待，否则当您使用`计算内核(compute kernel)`进行渲染时会出现这种问题。有关更多信息，请参阅[Encoding Indirect Command Buffers on the GPU](https://developer.apple.com/documentation/metal/indirect_command_buffers/encoding_indirect_command_buffers_on_the_gpu)。
+
+##### Check Thread Prioritization
+
+如果您错误配置线程优先级，您的应用程序可能会被其他进程抢占。要考虑这些与线程相关的流水线问题，请查看 `User Interactive Load track`。
+
+![9](./assets/imgs/tools/9.png)
+
+图9中的橙色尖峰表明可运行线程的数量超过了可用于处理它们的 CPU 内核。绿色区域表示有足够的 CPU 内核可用的良好状况。要处理有问题的橙色情况，您可以使用更少的线程，并提高应用程序线程的优先级。
+
+##### Check Low Thread Priority
+要确认低线程优先级是否正在影响您的应用程序的帧速率，请按照以下步骤操作并查看图 10中的相应标注：
+
+1. 观察长时间运行的显示实例。
+2. 确认有若干跳帧；对于使用 60 fps 帧间隔的应用程序，您会看到垂直同步与显示不一致。
+3. 选择 `User Interactive Load instrument` 工具。
+4. 在中心窗格中，单击并拖动以选择包含标注1中观察到的性能异常的区域。
+5. 在底部窗格中选择您的应用程序。
+6. 观察应用程序的线程状态。
+7. 观察您的应用程序的线程优先级。
+
+![10](./assets/imgs/tools/10.png)
+
+Preempted 线程状态表示其他 Runnable 和 Running 线程使您的应用程序的处理线程处于饥饿状态。低线程优先级是应用程序代码错误配置如何与低帧速率关联的一个示例。iOS 中的游戏渲染线程推荐优先级为 45。要设置线程的优先级，请在`pthread_create(_:_:_:_:)`创建线程之前调用`pthread_attr_setschedparam(_:_:)`.
 
 </br>
 </br>
