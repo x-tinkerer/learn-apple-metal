@@ -4,3 +4,6 @@
 [submodule "src/Part1_Ch2_UsingMetalToDrawAViewContentsents"]
 	path = src/Part1_Ch2_UsingMetalToDrawAViewContentsents
 	url = https://github.com/bigzz/UsingMetalToDrawAViewContentsents.git
+[submodule "src/Part1_Ch3_UsingARenderPipelineToRenderPrimitives"]
+	path = src/Part1_Ch3_UsingARenderPipelineToRenderPrimitives
+	url = git@github.com:bigzz/UsingARenderPipelineToRenderPrimitives.git
