@@ -209,7 +209,7 @@ id<MTLCommandBuffer> commandBuffer = [_mCommandQueue commandBuffer];
 id<MTLComputeCommandEncoder> computeEncoder = [commandBuffer computeCommandEncoder];
 ```
 
-![Metal](./assets/imgs/Metal-CreatingMetalApp_dark@2x.png)
+![Metal](./assets/imgs/ch1/Metal-CreatingMetalApp_dark@2x.png)
 
 #### 10. Set Pipeline State and Argument Data
 
@@ -432,7 +432,7 @@ id<MTLDrawable> drawable = view.currentDrawable;
 
 在上一节内容中学习了如何设置MTKView对象并使用渲染通道更改视图的内容，但上一示例只是将视图的内容擦除为背景颜色。本示例向您展示如何配置`渲染管道(render pipeline)`并将其用作`渲染通道(render pass)`的一部分，以在视图中绘制一个简单的 2D 彩色三角形。该示例为每个`顶点(vertex)`提供位置和颜色，`渲染管道(render pipeline)`使用该数据渲染三角形，在为三角形顶点指定的颜色之间插入颜色值。
 
-![triangle](./assets/imgs/c7a5392a-df08-4221-b588-692fb0e7ff91.png)
+![triangle](./assets/imgs/ch1/c7a5392a-df08-4221-b588-692fb0e7ff91.png)
 
 Xcode 项目包含可以在 macOS、iOS 和 tvOS 上运行示例的代码。
 
@@ -480,14 +480,14 @@ Xcode 项目包含可以在 macOS、iOS 和 tvOS 上运行示例的代码。
 
 在 Xcode 项目中，通过选择 Product > Profile 或按 Command+I (⌘I) 开始性能分析，在模板选择窗口中，选择 `Game Performance`。
 
-![1](./assets/imgs/tools/1.png)
+![1](./assets/imgs/chx_tools/Ch5/1.png)
 
 
 #### Capture Results
 
 首先单击图 2中显示的记录按钮，收集分析应用程序帧率问题所需的数据。
 
-![2](./assets/imgs/tools/2.png)
+![2](./assets/imgs/chx_tools/Ch5/2.png)
 
 在您的应用程序中，执行重现掉帧的操作，然后再次单击录制按钮以停止录制，在 Xcode 的中心窗格中找到获取的数据。
 
@@ -497,12 +497,12 @@ Xcode 项目包含可以在 macOS、iOS 和 tvOS 上运行示例的代码。
 
 例如，图3中的突出标注1展示了一个需要 250 毫秒 (ms) 才能完成显示的实例。标注2展示了在该时间段内跳过了多少垂直同步 (vsync) 信号。
 
-![3](./assets/imgs/tools/3.png)
+![3](./assets/imgs/chx_tools/Ch5/3.png)
 
 因为250毫秒的显示实例比它之前的显示实例要长得多，所以传送该帧的延迟将被用户感觉为卡顿。
 相比之下，图4展示了一个保持一致帧速率的应用程序。在显示结果中，将鼠标悬停在一帧上以检查其持续时间。
 
-![4](./assets/imgs/tools/4.png)
+![4](./assets/imgs/chx_tools/Ch5/4.png)
 
 16.67ms的是60 fps的一帧显示周期，并且由于图4中的所有其他帧始维持这样的显示周期，因此并没有观察到性能异常。
 
@@ -516,7 +516,7 @@ Xcode 项目包含可以在 macOS、iOS 和 tvOS 上运行示例的代码。
 2. 顶点着色器是使用率是良好的； 因为它在帧间隔内的很小一段时间内就完成了。
 3. 将鼠标悬停在片段着色器上以查看其持续时间； 在当前情况下，它运行了36毫秒，这太长了。
 
-![5](./assets/imgs/tools/5.png)
+![5](./assets/imgs/chx_tools/Ch5/5.png)
 
 由于顶点和片段着色器的总持续时间超过了60fps的帧间隔(16.67 ms)周期，因此应用程序跳过了一帧。在这种情况下，顶点着色器运行得很快，这意味着应用程序的帧速率问题完全是由片段着色器过度使用引起的。
 
@@ -552,14 +552,14 @@ Xcode 项目包含可以在 macOS、iOS 和 tvOS 上运行示例的代码。
 2. 观察到显示和着色器核心再次运行时之间大概有 ~1.5 帧的间隔间隙。
 3. 观察到显示和着色器核心再次运行时之间大概有 ~13 帧的间隔间隙。
 
-![6](./assets/imgs/tools/6.png)
+![6](./assets/imgs/chx_tools/Ch5/6.png)
 
 当显示跨越多个帧间隔并且着色器核心时间线中存在间隙（如图6中的标注2和3所示）时，这表明您的宿主应用程序的代码运行时间很长。接下来，需要检查应用程序的CPU利用率，以考虑它是否是导致帧速率不佳的原因。
 
 #### Check for Long-Running Host App Code
 要检查您的应用程序的 CPU 利用率，请在`线程状态跟踪(hread state tracks)`中识别您的`渲染线程(rendering thread)`。在 CPU 利用率正常的情况下，您的应用程序的渲染线程应该显示出大量的阻塞时间。图7显示了选定的应用程序渲染线程，并且突出展示了它在约16毫秒帧间隔内的阻塞时间。
 
-![7](./assets/imgs/tools/7.png)
+![7](./assets/imgs/chx_tools/Ch5/7.png)
 
 阻塞时间表示您的渲染器完成提交其`绘制调用(draw calls)`，并在帧间隔中留出一些时间。因为图7中显示的阻塞时间量约占其帧间隔的三分之二，所以宿主应用程序为着色器核心留出了足够的时间在相同的帧间隔内开始和完成其工作。
 
@@ -572,7 +572,7 @@ Xcode 项目包含可以在 macOS、iOS 和 tvOS 上运行示例的代码。
 5. 从视图选择菜单中选择`Profile`。
 6. 展开结果列表项并查找权重最高的方法，以找到在您的宿主应用程序代码中花费最多时间的方法。
 
-![8](./assets/imgs/tools/8.png)
+![8](./assets/imgs/chx_tools/Ch5/8.png)
 
 
 线程的运行时间由`track`中蓝色和橙色区域的集合表示（参见图8中的标注3）。如果帧间隔的阻塞时间很少，则表明 CPU 过度使用。要解决此问题，请将优化工作集中在改进运行缓慢的代码上，例如调整标注6标记的​​方法。因为`长时间运行(long-running methods)`的方法在您的应用程序中，您应该了解是否有机会以及如何优化它们以更快地运行。
@@ -588,7 +588,7 @@ CPU-GPU 重叠的意思是指通过最小化 CPU 和 GPU 相互等待的时间�
 
 如果您错误配置线程优先级，您的应用程序可能会被其他进程抢占。要考虑这些与线程相关的流水线问题，请查看 `User Interactive Load track`。
 
-![9](./assets/imgs/tools/9.png)
+![9](./assets/imgs/chx_tools/Ch5/9.png)
 
 图9中的橙色尖峰表明可运行线程的数量超过了可用于处理它们的 CPU 内核。绿色区域表示有足够的 CPU 内核可用的良好状况。要处理有问题的橙色情况，您可以使用更少的线程，并提高应用程序线程的优先级。
 
@@ -603,7 +603,7 @@ CPU-GPU 重叠的意思是指通过最小化 CPU 和 GPU 相互等待的时间�
 6. 观察应用程序的线程状态。
 7. 观察您的应用程序的线程优先级。
 
-![10](./assets/imgs/tools/10.png)
+![10](./assets/imgs/chx_tools/Ch5/10.png)
 
 Preempted 线程状态表示其他 Runnable 和 Running 线程使您的应用程序的处理线程处于饥饿状态。低线程优先级是应用程序代码错误配置如何与低帧速率关联的一个示例。iOS 中的游戏渲染线程推荐优先级为 45。要设置线程的优先级，请在`pthread_create(_:_:_:_:)`创建线程之前调用`pthread_attr_setschedparam(_:_:)`.
 
@@ -629,11 +629,11 @@ Preempted 线程状态表示其他 Runnable 和 Running 线程使您的应用程
 
 在 `Instruments` 中，选择 `Metal System Trace` 模板后，单击并按住 `Record` 按钮直到出现菜单，然后选择 `Recording Options` 菜单项：
 
-![1](./assets/imgs/tools/Ch6/1.png)
+![1](./assets/imgs/chx_tools/Ch6/1.png)
 
 然后，选择性能限制器选项：
 
-![2](./assets/imgs/tools/Ch6/2.png)
+![2](./assets/imgs/chx_tools/Ch6/2.png)
 
 
 #### Finding Your App's GPU Shader Occupancy
