@@ -612,3 +612,60 @@ Preempted 线程状态表示其他 Runnable 和 Running 线程使您的应用程
 
 ### [Chapter 6.Optimizing Performance with the GPU Counters Instrument](https://developer.apple.com/documentation/metal/optimizing_performance_with_the_gpu_counters_instrument)
 ----
+
+#### Overview
+`Metal GPU Counters instrument` 是 Xcode 11 中`Instrument` 的一部分，在配备 A11 或更高版本处理器的 iOS 或 iPadOS 设备上可以使用此工具来分析您的应用程序使用 GPU 的效率。当 GPU 未被充分利用时，可以查找阻碍工作送达GPU的瓶颈，或者找到可以让更多的工作发送给GPU的方法。当 GPU 有足够的工作时，找到执行时间最长的命令并优化它们以更有效地使用 GPU。
+
+`Metal GPU Counters instrument`分析您收集的数据并告诉您 GPU 瓶颈可能在哪里。例如，您可以确定 GPU 是否正在等待内存访问或数学运算完成，以及您是否发送了足够的工作来隐藏这些操作的延迟。将此数据与来自其他工具（例如 Metal System Trace 或 Shader Profiler）的数据结合使用，以确定您的应用程序是否有效地使用了 GPU。
+
+`Metal GPU Counters` 提供三种类型的计数器：
+
+- `占用计数器(Occupancy counters)` —— 用于测量 GPU 正在执行的线程数以及在这些线程上执行的`着色器阶段(shader stages)`。
+- `限制器计数器(Limiter counters)` —— 用于测量 GPU 子系统中的`活动(activity)`。这些测量包括 GPU 花费在执行工作上的时间以及子系统中阻止 GPU 开始新工作的任何`停顿(stalls)`。
+- `带宽计数器(Bandwidth counters)` —— 用于测量 GPU 用于读取或写入系统内存的总内存带宽。
+
+#### Enable GPU Counters in the Metal System Trace Template
+由于 GPU 计数器与 `Metal System Trace` 配合使用效果很好，因此使用它们的最佳方法是将它们作为 `Metal System Trace` 捕获的一部分启用。
+
+在 `Instruments` 中，选择 `Metal System Trace` 模板后，单击并按住 `Record` 按钮直到出现菜单，然后选择 `Recording Options` 菜单项：
+
+![1](./assets/imgs/tools/Ch6/1.png)
+
+然后，选择性能限制器选项：
+
+![2](./assets/imgs/tools/Ch6/2.png)
+
+
+#### Finding Your App's GPU Shader Occupancy
+
+
+##### Overview
+GPU 有可以同时执行的最大线程数限制，`占用率(occupancy)` 是度量 GPU 正在使用此容量的比例。当 GPU 有内部资源可以创建新线程以及仍然有线程要分派的命令时，它们会创建新线程，新线程开始执行指令，这可能需要很长时间才能完成。一条指令完成的时间称为它的延迟，GPU 通过在可用线程之间切换来隐藏这种延迟。
+
+`Compute Occupancy` 计数器用于测量执行计算命令的线程占 GPU 总线程容量的百分比。同样，`Vertex Occupancy` 和 `Fragment Occupancy` 计数器显示 GPU 线程中执行顶点和片段线程的百分比。这些百分比的总和是正在使用的 GPU 容量的总百分比。
+
+
+##### Determine Whether Your App Has High or Low GPU Occupancy
+占用率高或低都不会自动表明存在问题。例如，如果您的片段着色器与高占用率同时运行，则较低的顶点着色器占用率可能没问题。最终，您需要将占用测量与其他计数器或其他 Metal 工具的测量相关联，以确定您是否有问题。
+
+当整体占用率较低时，可能意味着以下情况之一是正确的：
+
+- 着色器已经耗尽了一些内部资源，例如线程、线程组或图像块内存，从而阻止了 GPU 创建更多线程。
+- 着色器足够简单，线程完成执行的速度比 GPU 创建新的要快。
+- 应用程序正在渲染目标内的一小块区域，或者调度非常小的计算网格，这样 GPU 就会用完要创建的线程。
+
+##### Determine the Impact on Your App
+如果您发现占用率低，下一步是确定它是否对您的应用程序产生负面影响。检查 Instruments 跟踪中的限制器计数器。如果它们也显示低值，则 GPU 执行的工作非常少。
+
+当总体占用率很高时，GPU 正在执行许多线程以隐藏指令延迟。占用率高一般是好事；您想充分发挥 GPU 的潜力。但是，您的着色器也有可能没有有效地使用 GPU。优化它们可以使 GPU 的更多容量可用于其他 GPU 命令。
+
+在极少数情况下，当占用率非常高时，GPU 可能会很差地执行其工作负载，因为线程正在争夺 GPU 内存缓存中的空间（也称为缓存抖动）。在这种情况下，您可能需要缩减发送到 GPU 的工作量或更改它访问内存的方式。
+
+例如，您可以尝试：
+
+- 减少内存访问次数
+- 减少访问的内存量
+- 更改访问内存时使用的时间或空间访问模式
+
+内存限制器计数器可以更深入地了解您的应用程序是否存在问题。
+当您的应用程序的 GPU 占用率很高时，请使用 `Metal GPU Counters` 工具中的其他计数器来确定您使用 GPU 的效率以及它花费最多时间的位置。此外，您可以使用其他工具进一步分析着色器。请参阅[Frame Capture Debugging Tools](https://developer.apple.com/documentation/metal/frame_capture_debugging_tools)
