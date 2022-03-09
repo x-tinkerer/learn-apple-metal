@@ -425,7 +425,7 @@ id<MTLDrawable> drawable = view.currentDrawable;
 </br>
 
 ### [Chapter 3. Using a Render Pipeline to Render Primitives](https://developer.apple.com/documentation/metal/using_a_render_pipeline_to_render_primitives)
-
+----
 渲染一个简单的2D三角形。
 
 #### Overview
@@ -446,30 +446,32 @@ Xcode 项目包含可以在 macOS、iOS 和 tvOS 上运行示例的代码。
 ## [PART X : Tools]()
 
 
-### [Chapter 1.Diagnosing Metal Programming Issues Early](https://developer.apple.com/documentation/metal/diagnosing_metal_programming_issues_early)
-
-
-</br>
-</br>
-
-### [Chapter 2.Developing Metal Apps that Run in Simulator](https://developer.apple.com/documentation/metal/developing_metal_apps_that_run_in_simulator)
+### [Chapter 1. Diagnosing Metal Programming Issues Early](https://developer.apple.com/documentation/metal/diagnosing_metal_programming_issues_early)
+----
 
 </br>
 </br>
 
-### [Chapter 3.Supporting Simulator in a Metal App](https://developer.apple.com/documentation/metal/supporting_simulator_in_a_metal_app)
-
-
-</br>
-</br>
-
-### [Chapter 4.Frame Capture Debugging Tools](https://developer.apple.com/documentation/metal/frame_capture_debugging_tools)
+### [Chapter 2. Developing Metal Apps that Run in Simulator](https://developer.apple.com/documentation/metal/developing_metal_apps_that_run_in_simulator)
+----
 
 </br>
 </br>
 
-### [Chapter 5.Using Metal System Trace in Instruments to Profile Your App](https://developer.apple.com/documentation/metal/using_metal_system_trace_in_instruments_to_profile_your_app)
----
+### [Chapter 3. Supporting Simulator in a Metal App](https://developer.apple.com/documentation/metal/supporting_simulator_in_a_metal_app)
+----
+
+</br>
+</br>
+
+### [Chapter 4. Frame Capture Debugging Tools](https://developer.apple.com/documentation/metal/frame_capture_debugging_tools)
+----
+
+</br>
+</br>
+
+### [Chapter 5. Using Metal System Trace in Instruments to Profile Your App](https://developer.apple.com/documentation/metal/using_metal_system_trace_in_instruments_to_profile_your_app)
+----
 通过检查应用程序的 CPU 和 GPU 利用率问题让帧率更平滑。
 
 #### Overview
@@ -610,7 +612,7 @@ Preempted 线程状态表示其他 Runnable 和 Running 线程使您的应用程
 </br>
 </br>
 
-### [Chapter 6.Optimizing Performance with the GPU Counters Instrument](https://developer.apple.com/documentation/metal/optimizing_performance_with_the_gpu_counters_instrument)
+### [Chapter 6. Optimizing Performance with the GPU Counters Instrument](https://developer.apple.com/documentation/metal/optimizing_performance_with_the_gpu_counters_instrument)
 ----
 
 #### Overview
