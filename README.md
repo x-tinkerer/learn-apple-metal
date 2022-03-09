@@ -668,4 +668,106 @@ GPU 有可以同时执行的最大线程数限制，`占用率(occupancy)` 是�
 - 更改访问内存时使用的时间或空间访问模式
 
 内存限制器计数器可以更深入地了解您的应用程序是否存在问题。
-当您的应用程序的 GPU 占用率很高时，请使用 `Metal GPU Counters` 工具中的其他计数器来确定您使用 GPU 的效率以及它花费最多时间的位置。此外，您可以使用其他工具进一步分析着色器。请参阅[Frame Capture Debugging Tools](https://developer.apple.com/documentation/metal/frame_capture_debugging_tools)
+当您的应用程序的 GPU 占用率很高时，请使用 `Metal GPU Counters` 工具中的其他计数器来确定您使用 GPU 的效率以及它花、
+
+
+
+##### Overview
+
+GPU 并行处理许多不同类型的工作，包括算术运算、内存访问和光栅化。`限制器计数器(Limiter counters)`通过提供该子系统处于活动状态的处理器周期总数的百分比来告诉您 GPU 的哪些子系统处于活动状态。高限制值告诉您子系统正在执行大量工作或被等待开始执行的新工作`阻止(blocked)`。
+
+与占用率一样，高百分比并不会表明一定存在问题。您的最终目标不是增加或减少这些限制值，而是用它们作为线索，帮助你寻找可以让 GPU 执行更多的命令并可以更快地处理它们。例如，如果您看到`算术逻辑单元 Arithmetic Logic Unit  (ALU)` 限制器计数器的值较高，则减少对 ALU 子系统的使用可能会提高性能，即使您没有看到计数器值发生变化。
+
+以下部分描述了您可以用来减轻特定 GPU 子系统的压力的措施，这些建议通常属于以下几种模式：
+- 减少子系统执行的操作数量。
+- 降低子​​系统中执行的工作的画质或精度。
+- 使用对 GPU 缓存影响较小的模式访问内存。
+- 将工作转移到使用率较低的其他子系统。
+
+其中一些建议是 `一种权衡的过程 tradeoffs` ，如降低画质或精度，以便子系统执行更少的工作，同时需要确定这些改变在应用程序中是否可以接受，并进行实验确认这些更改是否能提高性能。
+
+##### ALU Limiter Counter
+此计数器用于测量 GPU 用于处理算术指令的时间，包括按位运算（如 AND、OR、XOR 和shifts）和关系运算。
+
+如果您看到这个 Counter 的值较高，请尝试以下操作：
+- 当不需要精确的结果时，用近似值代替复杂的公式。
+- 使用 Metal `fast math flags` 编译着色器；仅在必要时使用精确的数学。请参阅[Metal Shading Language Guide](https://developer.apple.com/library/archive/documentation/Metal/Reference/MetalShadingLanguageGuide/Introduction/Introduction.html#//apple_ref/doc/uid/TP40014364)的第 1.5 节。
+- 当半浮点数具有计算所需的范围和精度时，请使用半浮点数而不是浮点数,避免浮点数和半浮点数之间的隐式转换。
+- 用 `查找表(lookup tables)` 或 `纹理(textures)` 替换复杂的计算。例如，不要每次都使用噪声函数计算需要值，而是创建噪声纹理并对其进行采样，将工作转移到纹理采样硬件上。
+
+##### Texture Sample Limiter Counter
+
+此计数器用于测量 GPU 执行 `纹理采样操作(texture sampling operations)` 所花费的时间。每当着色器执行 `采样(sample)` 、`收集(gather)` 或 `读取(read)` 操作时，以及在渲染通道使用 [MTLLoadAction.load](https://developer.apple.com/documentation/metal/mtlloadaction/load) 配置了任何 `颜色附件(color attachments)` 的操作时，GPU 都会对纹理进行采样。具有较大尺寸或像素格式的纹理x需要使用更多内存并需要将更多数据加载到 GPU 中。如果您在纹理中访问更大的 mipmap，您可能会看到对纹理加载性能的更大影响。
+
+如果您看到这个 Counter 的值较高，请尝试以下操作：
+- 当缩小的过滤器可以应用于较大的纹理时，请使用 mipmap。
+- 使用双线性而不是三线性过滤。
+- 减少`各向异性过滤(anisotropic filtering)`样本数。
+- 如果从纹理中数值取的值可以更低成本的计算出来，请在着色器中计算。
+- 为纹理选择较小的像素格式或较小的大小。
+- 如果适用，请使用`收集(gather)` 操作，而不是读取或采样单通道纹理。这样做可以更有效地利用纹理硬件。
+
+
+##### Texture Write Limiter Counter
+
+该计数器用于测量 GPU 写入纹理或等待纹理写入完成所花费的时间。纹理写入发生在渲染通道对其任何颜色附件执行操作 [MTLStoreAction.store](https://developer.apple.com/documentation/metal/mtlloadaction/load) 时，以及着色器显式写入纹理的任何位置, 较大的纹理和具有较大像素格式的纹理对纹理写入性能的影响更大。
+
+如果您看到这个 Counter 的值较高，请尝试以下操作：
+- 使用较小的像素格式。
+- 减少多重采样抗锯齿 (MSAA) 采样计数。
+- 减少非常小的三角形的渲染数量，尤其是在使用 MSAA 时。
+- 将数据写入具有更好空间和时间局部性的纹理，以便 GPU 硬件可以将内存写入合并到更少的事务中。
+
+##### Buffer Read Limiter Counter
+
+此计数器用于测量 GPU 从缓冲区读取数据所花费的时间。首先，这意味着您的着色器正在从 `设备中的缓冲区(buffers in the devic)` 或 `常量地址空间(constant address spaces)` 中读取数据。但是，如果您的着色器使用大量线程内存或使用动态索引访问内存，GPU 可能无法将所有数据存储在寄存器中。发生这种情况，GPU 可能会被迫将数据溢出到内存并读回。
+
+如果您看到这个 Counter 的值较高，请尝试以下操作：
+- 将数据更紧密地打包到缓冲区中并使用更小的数据类型。例如，使用 `packed_half3` 格式来表示位置而不是`float4` 格式.
+- 将标量值打包成 SIMD 类型。例如float，使用float4 SIMD 类型而不是四个单独的float值。
+- 使用纹理来平衡负载。
+- 删除 `线程范围(thread-scoped)` 数组的动态索引。
+
+
+##### Buffer Write Limiter Counter
+
+此计数器用于测量 GPU 将数据写入缓冲区所花费的时间，包括着色器写入设备地址空间中的内存的时间。与缓冲区读取限制器一样，如果您的着色器使用大量线程内存或使用动态索引访问内存，GPU 可能无法将所有数据存储在寄存器中。发生这种情况时，GPU 可能会被迫将数据溢出到内存并读回。
+
+如果您看到这个 Counter 的值较高，请尝试以下操作：
+- 删除 `线程范围(thread-scoped)` 数组的动态索引。
+- 减少对设备内存的原子写入次数。
+- 将标量值打包成 SIMD 类型。例如float，使用float4 SIMD 类型而不是四个单独的float值。
+
+##### Threadgroup/Imageblock (Local Memory) Read Limiter Counter
+此计数器用于测量 GPU 从线程组内存中读取的频率。在 Apple GPU 上，`threadgroup` 和 `imageblock` 内存是 GPU 内部 `一组统一(unified set)` 高性能内存，也称为 `tile memory` 。当您将`blending`当作 `渲染管道(render pipeline)` 的一部分从线程组内存读取数据、从图像块读取或写入像素数据、或者将将颜色附件数据作为输入传递给片段着色器时，您可以访问此高速内存。
+
+如果您看到这个 Counter 的值较高，请尝试以下操作：
+- 减少应用程序对线程组内存的原子读取次数。
+- 从同一线程组中的多个线程中删除对同一内存位置的访问。
+- 线程组内存分配时 16 字节边界对齐。
+- 重新排序内存访问模式，以便四元组中的相邻线程写入线程组内存中的相邻元素。
+
+##### Threadgroup/Imageblock (Local Memory) Write Limiter Counter
+
+此计数器用于测量 GPU 从线程组内存中读取的频率。在 Apple GPU 上，`threadgroup` 和 `imageblock` 内存是 GPU 内部 `一组统一(unified set)` 高性能内存，也称为 `tile memory` 。当您在计算着色器中写入线程组内存、写入图像块中的像素、在渲染过程中使用混合或将数据从片段着色器写入颜色附件时，您可以访问此高速内存。
+
+如果您看到这个 Counter 的值较高，请尝试以下操作：
+- 减少应用程序对线程组内存的原子写入次数。。
+- 线程组内存分配时 16 字节边界对齐。
+- 重新排序内存访问模式，以便四元组中的相邻线程写入线程组内存中的相邻元素。
+
+##### Fragment Input Interpolation Limiter Counter
+此计数器用于测量 GPU 为片段着色器的参数计算插值所花费的时间。在渲染管道中，`顶点阶段(vertex stage)` 发出的数据在传递到 `片段阶段(fragment stage)` 之前被插值。
+
+如果您看到这个 Counter 的值较高，请尝试删除传递给片段着色器的顶点属性。
+
+
+##### GPU Last Level Cache Limiter Counter
+此计数器用于测量 GPU 在 `highest-level GPU cache` 缓存中处理请求所花费的时间。此处的值较高可能表明您的着色器正在请求大量数据没有命中缓存。
+
+如果您看到这个 Counter 的值较高，请尝试以下操作：
+- 如果缓冲区或纹理操作的其他限制器计数器也显示比较高，请首先对这些限制器计数器应用优化。
+- 访问内存时注意让其具有更好的时空局部性；对内存的随机访问更有可能导致 `cache miss`。
+- 对仅采样或读取的纹理使用 `压缩像素格式(compressed pixel formats)` 。
+- 减小 `工作集(working sets)` 的大小。
+- 如果您的着色器在设备地址空间中的内存上使用原子操作，请将中间结果保存在线程组内存中，并在该地址空间中使用原子操作。
