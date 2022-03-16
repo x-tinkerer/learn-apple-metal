@@ -430,14 +430,31 @@ id<MTLDrawable> drawable = view.currentDrawable;
 
 #### Overview
 
-在上一节内容中学习了如何设置MTKView对象并使用渲染通道更改视图的内容，但上一示例只是将视图的内容擦除为背景颜色。本示例向您展示如何配置`渲染管道(render pipeline)`并将其用作`渲染通道(render pass)`的一部分，以在视图中绘制一个简单的 2D 彩色三角形。该示例为每个`顶点(vertex)`提供位置和颜色，`渲染管道(render pipeline)`使用该数据渲染三角形，在为三角形顶点指定的颜色之间插入颜色值。
+在上一节中学习了如何设置MTKView对象并使用`渲染通道(render pass)`更改视图的内容，但上一示例只是将视图的内容擦除为背景颜色。本示例将向您展示如何配置`渲染管道(render pipeline)`并将其作为`渲染通道(render pass)`的一部分，以在视图中绘制一个简单的 2D 彩色三角形。该示例为每个`顶点(vertex)`提供位置和颜色，`渲染管道(render pipeline)`使用该数据来渲染三角形，并根据三角形顶点指定的颜色在其之间插入颜色值。
 
-![triangle](./assets/imgs/ch1/c7a5392a-df08-4221-b588-692fb0e7ff91.png)
+![triangle](./assets/imgs/ch3/1.png)
 
 Xcode 项目包含可以在 macOS、iOS 和 tvOS 上运行示例的代码。
 
 
+#### Understand the Metal Render Pipeline
 
+`渲染管道(render pipeline)`被用来处理绘图命令并将结果数据写入渲染目标。`渲染管道(render pipeline)`有许多阶段，有些可以使用着色器进行编程，而另一些则具有固定或可配置的行为。本示例重点介绍流水线的三个主要阶段：`顶点阶段(vertex stage)`、`光栅化阶段(rasterization stage)`和`片段阶段(fragment stage)`。顶点阶段和片段阶段是可编程的，因此您可以使用`Metal Shading Language(MSL)` 为它们编写函数, 而光栅化阶段具有固定的功能。
+
+![pipeline](./assets/imgs/ch3/2.png)
+
+渲染从绘制命令开始，其中包括顶点数和要渲染的图元类型。例如，以下是此示例中的绘图命令：
+
+```c
+// Draw the triangle.
+[renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle
+                  vertexStart:0
+                  vertexCount:3];
+```
+
+顶点阶段为每个顶点提供所需的数据，当处理完足够的顶点后，渲染管道会执行光栅化`图元(primitive)`，确定渲染目标中的哪些像素位于图元的边界内，片段阶段确定这些像素要写入渲染目标的值。
+
+在本示例的其余部分，您将看到如何编写顶点和片段函数，如何创建渲染管道状态对象，最后，如何编码以使用此管道的绘制命令完成工作。
 
 
 </br>
